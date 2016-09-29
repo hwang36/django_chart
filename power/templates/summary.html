@@ -5,15 +5,36 @@
   <title>Title</title>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
   <script src="http://code.highcharts.com/highcharts.js"></script>
+  <script>
+    function dateSelected(date) {
+      console.log(date);
+      window.location = '/power/summary/' + date;
+    }
+  </script>
 </head>
 
 <body>
 <h3>Daily Summary</h3>
 <div style="float:left;">
-<h4>Average:{{ ave }}</h4>
-<h4>Max: {{ max }}</h4>
-<h4>Min: {{ min }}</h4>
+  <select title="aaa" name="choose-date" onchange="dateSelected(this.value)">
+  {% for date in sorted_dates %}
+    <option value="{{date}}"
+       {% if date == request_date %}selected="selected"{% endif %}>
+       {{date|capfirst}}
+    </option>
+  {% endfor %}
+  </select>
+  <h4>Device ID: {{ dev1_id }}</h4>
+  <h4>Ave: {{ dev1_kwh_ave }}</h4>
+  <h4>Max: {{ dev1_kwh_max }}</h4>
+  <h4>Min: {{ dev1_kwh_min }}</h4>
+  <br/>
+  <h4>Device ID: {{ dev2_id }}</h4>
+  <h4>Ave: {{ dev2_kwh_ave }}</h4>
+  <h4>Max: {{ dev2_kwh_max }}</h4>
+  <h4>Min: {{ dev2_kwh_min }}</h4>
 </div>
+
 
 <div id="container" style="min-width: 310px; height: 350px; margin: 0 auto; max-width: 700px;">original view</div>
 
