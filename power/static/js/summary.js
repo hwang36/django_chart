@@ -9,16 +9,13 @@ $(function () {
         text: 'Daily kWh Summary',
         x: -20 //center
       },
-      subtitle: {
-        text: 'Source: Device ' + deviceId,
-        x: -20
-      },
-      xAxis: {
-        categories: ['0', '1', '2', '3', '4', '5',
-          '6', '7', '8', '9', '10', '11']
+      xAxis: { // TODO
+        categories: data_categories
+        //categories: ['0', '1', '2', '3', '4', '5',
+        //  '6', '7', '8', '9', '10', '11']
       },
       yAxis: {
-        title: {
+        title: { // TODO
           text: 'kWh'
         },
         plotLines: [{
@@ -36,11 +33,21 @@ $(function () {
         verticalAlign: 'middle',
         borderWidth: 0
       },
-      series: [
-        {
-        name: 'Device ' + deviceId,
-        data:  testData
-      }]
+      series: data_series
+      //series:
+      //  [ // TODO
+      //  {
+      //  name: 'Device ' + deviceId,
+      //  data:  testData
+      //},
+      //{
+      //  name: 'Device 533',
+      //  data: [83.6, 78.8, 98.5, 93.4, 106.0, 84.5, 105.0, 104.3, 91.2, 83.5, 106.6, 92.3]
+      //}, {
+      //  name: 'sum',
+      //  data: [132.5, 116.6, 137.8, 134.8, 153.0, 132.8, 164.0, 163.9, 143.6, 148.7, 165.9, 143.5]
+      //}
+      //]
     });
   };
   $(document).ready(function(){

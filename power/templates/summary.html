@@ -22,8 +22,8 @@
 </html>
 
 <script>
-  var testData = {{ one_set }};
-  var deviceId = {{ deviceId }};
+  var data_categories = {{ data_categories }};
+  var data_series = {{ data_series|safe }};
 </script>
 {% load staticfiles %}
 <script type="text/javascript" src="{% static "js/summary.js" %}"></script>
