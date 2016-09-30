@@ -1,45 +1,105 @@
-import os
-# from django.conf.
 from django.shortcuts import render
 import datetime
-from django.db.models import Avg, Max, Min
 from django.http import HttpResponse, HttpResponseRedirect
 import csv
-import json
 import time
-import sys
-import traceback
-# Create your views here.
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the power index.")
 
 
 def view_data(request, request_date):
+    """Entry point of the summary page. It parse the data and get
+    the data for a certain day, and send it back to the client.
+    :param request: the http request
+    :param request_date: date for the data
+    :return: the http response
+    """
+    return_json = {}
+
+    # handle data from csv file and prepare it
+
+    # NOTE: in the real scenario, the file would be in some network share folder
+    # or in the cloud.
     # file = "/Users/huawang/django/codetest/data/dataSheet.csv"
     file = "/Users/huawang/Downloads/t1.csv"
-    return_json = {}
-    # try:
-    #     print "--1----------------------"
-    #     print request.body
-    #     print "------------------------"
-    #     mydata = json.loads(str(request.body))
-    #     if 'request_date' in mydata and mydata['request_date'] != '':
-    #         request_date = mydata['request_date']
-    #     print "--2----------------------"
-    #     print request_date
-    #     print "------------------------"
-    # except:
-    #     return_json['success'] = False
-    #     print sys.exc_info()
-    #     traceback.print_exc()
-    #
-    print "--3----------------------"
-    print request_date
-    print "------------------------"
 
+    # NOTE: we are reading the whole file when the user is only asking for
+    # one day's data. There are two ways to imrprove it:
+    # 1. skip a line when it's not for the date being asked
+    # 2. use SPA(single page application) style, and the client only
+    #    get the whole dataset once.
+    table = process_data_file(file)
+
+    print(table)
+
+    # use the latest date as the default date when request_date is not set
+    # correctly
+    keys = table.keys()
+    keys.sort()
+    sorted_dates = keys
+    if request_date not in sorted_dates:
+        request_date = sorted_dates[-1]
+        response =  HttpResponseRedirect('/power/summary/' + request_date)
+        return response
+
+    # prepare the data to be used in charts
+    data_for_request_date = table[request_date]
+    data_series = []
+    data_categories = []
+    data_stats = {}
+    device_id_1 = ''
+    device_id_2 = ''
+
+    for k, v in data_for_request_date.items():
+        device_id_1 = v['device_id_1']
+        device_id_2 = v['device_id_2']
+        data_series.append({
+            'name': 'Device ' + device_id_1,
+            'data': v['kwh'][device_id_1]
+        })
+        data_series.append({
+            'name': 'Device ' + device_id_2,
+            'data': v['kwh'][device_id_2]
+        })
+        data_series.append({
+            'name': 'Sum',
+            'data': v['kwh']['kwh_sum']
+        })
+        data_categories = v['kwh']['categories']
+        data_stats = v['stats']
+
+    return_json['data_series'] = data_series
+    return_json['data_stats'] = data_stats
+    return_json['device_id_1'] = device_id_1
+    return_json['device_id_2'] = device_id_2
+    return_json['data_categories'] = data_categories
+    return_json['sorted_dates'] = sorted_dates
+    return_json['request_date'] = request_date
+
+    return render(request, 'summary.html', return_json)
+
+
+def calculate_statistics(table):
+    for date, pair_dict in table.items():
+        # NOTE: we assume that one device only shows up in one device-pair,
+        # so we can put the statistics data in the device-pair dict
+        for k, v in pair_dict.items():
+            v['stats'] = {}
+            device_id_1 = v['device_id_1']
+            kwhs_1 = v['kwh'][device_id_1]
+            v['stats']['device_1_min'] = round(min(kwhs_1), 8)
+            v['stats']['device_1_max'] = round(max(kwhs_1), 8)
+            v['stats']['device_1_avg'] = round(float (sum(kwhs_1))/max(len(kwhs_1), 1), 8)
+
+            device_id_2 = v['device_id_2']
+            kwhs_2 = v['kwh'][device_id_2]
+            v['stats']['device_2_min'] = round(min(kwhs_2), 8)
+            v['stats']['device_2_max'] = round(max(kwhs_2), 8)
+            v['stats']['device_2_avg'] = round(float (sum(kwhs_2))/max(len(kwhs_2), 1), 8)
+
+
+def process_data_file(file):
     table = {}
-    # indices
+    # indices. Because there are duplicated headers, we use indices to locate
+    # the fields.
     device_id_idx_1 = 1
     time_stamp_idx_1 = 2
     kwh_idx_1 = 4
@@ -49,22 +109,19 @@ def view_data(request, request_date):
     power_idx_2 = 11
     kwh_sum_idx = 14
     power_sum_idx = 15
-
-    # handle data from csv file
     with open(file, 'rb') as f:
         reader = csv.reader(f)
+        # skip the top empty row and the header row
         reader.next()
         reader.next()
+
         for row in reader:
             # parse date out
             raw_date = row[time_stamp_idx_1]
-            print (raw_date)
             parsed_date = time.strptime(raw_date, "%Y-%m-%d %H:%M:%S-07:00")
             parsed_date = datetime.datetime(*parsed_date[:6])
 
             # set table[date] according to the indices
-            # date = str(parsed_date.tm_mon) + '-' + str(parsed_date.tm_mday)
-
             date = parsed_date.strftime("%Y-%m-%d")
             kwh1 = float(row[kwh_idx_1])
             kwh2 = float(row[kwh_idx_2])
@@ -82,8 +139,7 @@ def view_data(request, request_date):
                     'kwh': {},
                     'power': {},
                     'labels': [],
-                    'date': date,
-                    'statistics': {}
+                    'date': date
                 }
             if not device_id_1 in table[date][device_pair]['kwh']:
                 table[date][device_pair]['kwh'][device_id_1] = []
@@ -98,72 +154,8 @@ def view_data(request, request_date):
                 table[date][device_pair]['kwh']['categories'] = []
             table[date][device_pair]['kwh']['categories'].append(hour)
 
-        print table
+    calculate_statistics(table)
 
-        keys = table.keys()
-        keys.sort()
-        sorted_dates = keys
-        print(sorted_dates)
+    return table
 
-    # TODO: calculate the real statistics
-    return_json['dev1_kwh_ave'] = 0.0
-    return_json['dev1_kwh_max'] = 0.0
-    return_json['dev1_kwh_min'] = 0.0
-
-    # TODO: sort the dates and use the latest date when request_date is not set
-    if request_date not in sorted_dates:
-        request_date = sorted_dates[-1]
-        response =  HttpResponseRedirect('/power/summary/' + request_date)
-        return response
-
-    data_for_request_date = table[request_date]
-    data_series = []
-    data_categories = []
-    for k, v in data_for_request_date.items():
-        data_series.append({
-            'name': 'Device ' + device_id_1,
-            'data': v['kwh'][device_id_1]
-        })
-        data_series.append({
-            'name': 'Device ' + device_id_2,
-            'data': v['kwh'][device_id_2]
-        })
-        data_series.append({
-            'name': 'Sum',
-            'data': v['kwh']['kwh_sum']
-        })
-        data_categories = v['kwh']['categories']
-
-    return_json['data_series'] = data_series
-    print("-----3--")
-    print(data_series)
-
-    # move statistics to be inside table
-    device_pairs = data_for_request_date.keys()
-    if (len(device_pairs) == 1) :
-        device_pair = device_pairs[0]
-        (device_id_1, device_id_2) = device_pair.split('-')
-        kwhs_d1 = data_for_request_date[device_pairs[0]]['kwh'][device_id_1]
-        kwh_ave_d1 = float (sum(kwhs_d1))/max(len(kwhs_d1), 1)
-        kwh_min_d1 = min(kwhs_d1)
-        kwh_max_d1 = max(kwhs_d1)
-        return_json['dev1_kwh_ave'] = round(kwh_ave_d1, 5)
-        return_json['dev1_kwh_max'] = round(kwh_max_d1, 5)
-        return_json['dev1_kwh_min'] = round(kwh_min_d1, 5)
-        return_json['dev1_id'] = device_id_1
-
-        kwhs_d2 = data_for_request_date[device_pairs[0]]['kwh'][device_id_2]
-        kwh_ave_d2 = float (sum(kwhs_d2))/max(len(kwhs_d2), 1)
-        kwh_min_d2 = min(kwhs_d2)
-        kwh_max_d2 = max(kwhs_d2)
-        return_json['dev2_kwh_ave'] = round(kwh_ave_d2, 5)
-        return_json['dev2_kwh_max'] = round(kwh_max_d2, 5)
-        return_json['dev2_kwh_min'] = round(kwh_min_d2, 5)
-        return_json['dev2_id'] = device_id_2
-
-    return_json['data_categories'] = data_categories
-    return_json['sorted_dates'] = sorted_dates
-    return_json['request_date'] = request_date
-
-    return render(request, 'summary.html', return_json)
 

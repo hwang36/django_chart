@@ -9,13 +9,14 @@ $(function () {
         text: 'Daily kWh Summary',
         x: -20 //center
       },
-      xAxis: { // TODO
+      xAxis: {
         categories: data_categories
-        //categories: ['0', '1', '2', '3', '4', '5',
+        //categories: // sample data
+        // ['0', '1', '2', '3', '4', '5',
         //  '6', '7', '8', '9', '10', '11']
       },
       yAxis: {
-        title: { // TODO
+        title: { // TODO: should come from the backend. Might be "power" too
           text: 'kWh'
         },
         plotLines: [{
@@ -34,8 +35,8 @@ $(function () {
         borderWidth: 0
       },
       series: data_series
-      //series:
-      //  [ // TODO
+      //series: // sample data
+      //  [
       //  {
       //  name: 'Device ' + deviceId,
       //  data:  testData

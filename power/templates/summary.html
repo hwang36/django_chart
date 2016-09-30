@@ -7,7 +7,8 @@
   <script src="http://code.highcharts.com/highcharts.js"></script>
   <script>
     function dateSelected(date) {
-      console.log(date);
+      // redirect to the new date.
+      // NOTE: we can change it to use ajax to improve user experience
       window.location = '/power/summary/' + date;
     }
   </script>
@@ -24,20 +25,18 @@
     </option>
   {% endfor %}
   </select>
-  <h4>Device ID: {{ dev1_id }}</h4>
-  <h4>Ave: {{ dev1_kwh_ave }}</h4>
-  <h4>Max: {{ dev1_kwh_max }}</h4>
-  <h4>Min: {{ dev1_kwh_min }}</h4>
+  <h4>Device ID: {{ device_id_1 }}</h4>
+  <h4>Avg: {{ data_stats.device_1_avg }}</h4>
+  <h4>Max: {{ data_stats.device_1_max }}</h4>
+  <h4>Min: {{ data_stats.device_1_min }}</h4>
   <br/>
-  <h4>Device ID: {{ dev2_id }}</h4>
-  <h4>Ave: {{ dev2_kwh_ave }}</h4>
-  <h4>Max: {{ dev2_kwh_max }}</h4>
-  <h4>Min: {{ dev2_kwh_min }}</h4>
+  <h4>Device ID: {{ device_id_2 }}</h4>
+  <h4>Avg: {{ data_stats.device_2_avg }}</h4>
+  <h4>Max: {{ data_stats.device_2_max }}</h4>
+  <h4>Min: {{ data_stats.device_2_min }}</h4>
 </div>
 
-
-<div id="container" style="min-width: 310px; height: 350px; margin: 0 auto; max-width: 700px;">original view</div>
-
+<div id="container" style="min-width: 310px; height: 350px; margin: 0 auto; max-width: 700px;">original view for the container</div>
 
 </body>
 </html>
